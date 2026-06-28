@@ -1,339 +1,233 @@
-from __future__ import annotations
-
-import io
-import uuid
+import os
 from datetime import date, datetime
-from pathlib import Path
-from typing import Any
 
 import pandas as pd
-import plotly.express as px
-import requests
 import streamlit as st
 
 st.set_page_config(
     page_title="Controle Financeiro",
     page_icon="💰",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-CATEGORIAS = [
-    "Alimentação",
-    "Moradia",
-    "Transporte",
-    "Saúde",
-    "Farmácia",
-    "Mercado",
-    "Lazer",
-    "Educação",
-    "Cartão",
-    "Empréstimo",
-    "Salário",
-    "Venda",
-    "Pix recebido",
-    "Outros",
-]
-FORMAS_PAGAMENTO = ["Pix", "Dinheiro", "Cartão Débito", "Cartão Crédito", "Boleto", "Transferência", "Outro"]
-STATUS = ["Em aberto", "Pago", "Cancelado"]
+ARQUIVO = "dados/lancamentos.csv"
 COLUNAS = [
-    "id", "data_lancamento", "tipo", "descricao", "categoria", "valor",
-    "forma_pagamento", "status", "data_vencimento", "data_pagamento", "observacao",
-    "criado_em", "atualizado_em",
+    "ID", "Data", "Tipo", "Descricao", "Categoria", "Valor",
+    "Forma_Pagamento", "Status", "Vencimento", "Data_Pagamento", "Observacao"
 ]
-LOCAL_PATH = Path("dados/financeiro.csv")
+
+CATEGORIAS = [
+    "Alimentação", "Moradia", "Transporte", "Saúde", "Farmácia",
+    "Educação", "Lazer", "Cartão", "Empréstimo", "Salário",
+    "Pix recebido", "Venda", "Outros"
+]
+
+FORMAS = ["Pix", "Dinheiro", "Cartão Débito", "Cartão Crédito", "Boleto", "Transferência", "Outros"]
+STATUS = ["Em aberto", "Pago"]
+TIPOS = ["Receita", "Despesa"]
 
 
-def moeda(v: float) -> str:
+def moeda(v):
     try:
         return f"R$ {float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except Exception:
         return "R$ 0,00"
 
 
-def hoje_iso() -> str:
-    return date.today().isoformat()
+def garantir_arquivo():
+    os.makedirs("dados", exist_ok=True)
+    if not os.path.exists(ARQUIVO):
+        pd.DataFrame(columns=COLUNAS).to_csv(ARQUIVO, index=False)
 
 
-def agora_iso() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
-def get_secret(name: str, default: str = "") -> str:
+def carregar():
+    garantir_arquivo()
     try:
-        return str(st.secrets.get(name, default))
+        df = pd.read_csv(ARQUIVO, dtype=str).fillna("")
     except Exception:
-        return default
+        df = pd.DataFrame(columns=COLUNAS)
 
-
-def supabase_config() -> tuple[str, str]:
-    return get_secret("SUPABASE_URL"), get_secret("SUPABASE_KEY")
-
-
-def usar_supabase() -> bool:
-    url, key = supabase_config()
-    return bool(url and key)
-
-
-def supabase_headers() -> dict[str, str]:
-    _, key = supabase_config()
-    return {
-        "apikey": key,
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json",
-        "Prefer": "return=representation",
-    }
-
-
-def limpar_df(df: pd.DataFrame) -> pd.DataFrame:
-    if df is None or df.empty:
-        return pd.DataFrame(columns=COLUNAS)
     for c in COLUNAS:
         if c not in df.columns:
-            df[c] = "" if c != "valor" else 0.0
+            df[c] = ""
+
     df = df[COLUNAS].copy()
-    df["valor"] = pd.to_numeric(df["valor"], errors="coerce").fillna(0.0)
-    for c in ["data_lancamento", "data_vencimento", "data_pagamento"]:
-        df[c] = pd.to_datetime(df[c], errors="coerce").dt.date.astype(str).replace("NaT", "")
-    df = df[df["id"].astype(str).str.strip() != ""].copy()
+    df = df[df["ID"].astype(str).str.strip() != ""].copy()
+
+    if not df.empty:
+        df["ID"] = pd.to_numeric(df["ID"], errors="coerce")
+        df = df[df["ID"].notna()].copy()
+        df["ID"] = df["ID"].astype(int)
+        df["Valor"] = pd.to_numeric(df["Valor"], errors="coerce").fillna(0.0)
+    else:
+        df["ID"] = pd.Series(dtype="int")
+        df["Valor"] = pd.Series(dtype="float")
+
     return df
 
 
-def carregar_dados() -> pd.DataFrame:
-    if usar_supabase():
-        url, _ = supabase_config()
-        endpoint = f"{url.rstrip('/')}/rest/v1/financeiro?select=*&order=data_lancamento.desc,criado_em.desc"
-        try:
-            r = requests.get(endpoint, headers=supabase_headers(), timeout=20)
-            r.raise_for_status()
-            return limpar_df(pd.DataFrame(r.json()))
-        except Exception as e:
-            st.warning(f"Não consegui carregar do Supabase. Usando arquivo local nesta sessão. Detalhe: {e}")
-    if LOCAL_PATH.exists():
-        return limpar_df(pd.read_csv(LOCAL_PATH, dtype=str))
-    return pd.DataFrame(columns=COLUNAS)
+def salvar(df):
+    garantir_arquivo()
+    df = df.copy()
+    for c in COLUNAS:
+        if c not in df.columns:
+            df[c] = ""
+    df[COLUNAS].to_csv(ARQUIVO, index=False)
 
 
-def salvar_local(df: pd.DataFrame) -> None:
-    LOCAL_PATH.parent.mkdir(parents=True, exist_ok=True)
-    limpar_df(df).to_csv(LOCAL_PATH, index=False, encoding="utf-8-sig")
+def proximo_id(df):
+    if df.empty:
+        return 1
+    return int(pd.to_numeric(df["ID"], errors="coerce").max()) + 1
 
 
-def inserir_registro(novo: dict[str, Any]) -> None:
-    novo = {c: novo.get(c, "") for c in COLUNAS}
-    if usar_supabase():
-        url, _ = supabase_config()
-        endpoint = f"{url.rstrip('/')}/rest/v1/financeiro"
-        r = requests.post(endpoint, headers=supabase_headers(), json=novo, timeout=20)
-        r.raise_for_status()
-    else:
-        df = carregar_dados()
-        df = pd.concat([df, pd.DataFrame([novo])], ignore_index=True)
-        salvar_local(df)
-
-
-def atualizar_registro(id_reg: str, dados: dict[str, Any]) -> None:
-    dados["atualizado_em"] = agora_iso()
-    if usar_supabase():
-        url, _ = supabase_config()
-        endpoint = f"{url.rstrip('/')}/rest/v1/financeiro?id=eq.{id_reg}"
-        r = requests.patch(endpoint, headers=supabase_headers(), json=dados, timeout=20)
-        r.raise_for_status()
-    else:
-        df = carregar_dados()
-        mask = df["id"].astype(str) == str(id_reg)
-        for k, v in dados.items():
-            if k in df.columns:
-                df.loc[mask, k] = v
-        salvar_local(df)
-
-
-def excluir_registro(id_reg: str) -> None:
-    if usar_supabase():
-        url, _ = supabase_config()
-        endpoint = f"{url.rstrip('/')}/rest/v1/financeiro?id=eq.{id_reg}"
-        r = requests.delete(endpoint, headers=supabase_headers(), timeout=20)
-        r.raise_for_status()
-    else:
-        df = carregar_dados()
-        df = df[df["id"].astype(str) != str(id_reg)]
-        salvar_local(df)
-
-
-def to_excel_bytes(df: pd.DataFrame) -> bytes:
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="financeiro")
-    return output.getvalue()
+def formatar_tabela(df):
+    if df.empty:
+        return df
+    out = df.copy()
+    out["Valor"] = out["Valor"].apply(moeda)
+    return out.rename(columns={
+        "Forma_Pagamento": "Forma de Pagamento",
+        "Data_Pagamento": "Data de Pagamento"
+    })
 
 
 st.markdown("""
 <style>
-.block-container {padding-top: 1.5rem; padding-bottom: 1rem; max-width: 980px;}
-[data-testid="stMetricValue"] {font-size: 1.5rem;}
+.block-container {padding-top: 1.2rem; padding-bottom: 2rem; max-width: 760px;}
 .stButton button {width: 100%; height: 3rem; border-radius: 12px; font-weight: 700;}
-.stDownloadButton button {width: 100%; height: 3rem; border-radius: 12px; font-weight: 700;}
-input, textarea, select {font-size: 16px !important;}
+.stTextInput input, .stNumberInput input, .stDateInput input, .stSelectbox div {border-radius: 10px;}
+[data-testid="stMetricValue"] {font-size: 1.5rem;}
+.card {padding: 14px; border: 1px solid #30363d; border-radius: 14px; background: #161b22; margin-bottom: 10px;}
+.small {color: #9ca3af; font-size: 0.9rem;}
 </style>
 """, unsafe_allow_html=True)
 
-st.title("💰 Controle Financeiro Pessoal")
-st.caption("Versão simples para celular | Receitas, despesas, vencimentos e status de pagamento")
+st.title("💰 Controle Financeiro")
+st.caption("Versão V7 simples para celular — receitas, despesas, vencimentos e status.")
 
-if usar_supabase():
-    st.success("Banco online Supabase conectado.", icon="✅")
-else:
-    st.info("Modo local/temporário. Para usar no Streamlit Cloud com dados permanentes, configure o Supabase conforme o README.", icon="ℹ️")
+df = carregar()
 
-aba = st.radio(
-    "Menu",
-    ["➕ Novo", "🔁 Alterar status", "📊 Painel", "📤 Exportar"],
-    horizontal=True,
-    label_visibility="collapsed",
-)
-
-df = carregar_dados()
+aba = st.radio("Menu", ["➕ Novo", "🔄 Status", "📊 Painel", "📋 Lista"], horizontal=True, label_visibility="collapsed")
 
 if aba == "➕ Novo":
     st.subheader("Novo lançamento")
     with st.form("form_novo", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            data_lanc = st.date_input("Data", value=date.today(), format="DD/MM/YYYY")
-            tipo = st.selectbox("Tipo", ["Despesa", "Receita"])
-            categoria = st.selectbox("Categoria", CATEGORIAS, index=CATEGORIAS.index("Outros"))
-        with c2:
-            valor = st.number_input("Valor", min_value=0.0, step=1.0, format="%.2f")
-            forma = st.selectbox("Forma de pagamento", FORMAS_PAGAMENTO)
-            status = st.selectbox("Status", STATUS)
-        descricao = st.text_input("Descrição", placeholder="Ex.: Almoço, aluguel, salário...")
-        c3, c4 = st.columns(2)
-        with c3:
-            vencimento = st.date_input("Data de vencimento", value=date.today(), format="DD/MM/YYYY")
-        with c4:
-            data_pagamento = st.date_input("Data de pagamento", value=date.today(), format="DD/MM/YYYY") if status == "Pago" else None
-        obs = st.text_area("Observação", height=80)
-        salvar = st.form_submit_button("Salvar lançamento")
-        if salvar:
-            if not descricao.strip():
-                st.error("Informe uma descrição.")
-            elif valor <= 0:
-                st.error("Informe um valor maior que zero.")
-            else:
-                novo = {
-                    "id": str(uuid.uuid4()),
-                    "data_lancamento": data_lanc.isoformat(),
-                    "tipo": tipo,
-                    "descricao": descricao.strip(),
-                    "categoria": categoria,
-                    "valor": float(valor),
-                    "forma_pagamento": forma,
-                    "status": status,
-                    "data_vencimento": vencimento.isoformat(),
-                    "data_pagamento": data_pagamento.isoformat() if data_pagamento else "",
-                    "observacao": obs.strip(),
-                    "criado_em": agora_iso(),
-                    "atualizado_em": agora_iso(),
-                }
-                try:
-                    inserir_registro(novo)
-                    st.success("Lançamento salvo com sucesso.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro ao salvar: {e}")
+        data_lanc = st.date_input("Data", value=date.today(), format="DD/MM/YYYY", key="novo_data")
+        tipo = st.selectbox("Tipo", TIPOS, key="novo_tipo")
+        valor = st.number_input("Valor", min_value=0.0, step=1.0, format="%.2f", key="novo_valor")
+        descricao = st.text_input("Descrição", placeholder="Ex.: Almoço, salário, aluguel", key="novo_desc")
+        categoria = st.selectbox("Categoria", CATEGORIAS, key="novo_cat")
+        forma = st.selectbox("Forma de pagamento", FORMAS, key="novo_forma")
+        status = st.selectbox("Status", STATUS, key="novo_status")
+        venc = st.date_input("Data de vencimento / regularização", value=date.today(), format="DD/MM/YYYY", key="novo_venc")
+        data_pag = ""
+        if status == "Pago":
+            data_pag = st.date_input("Data de pagamento", value=date.today(), format="DD/MM/YYYY", key="novo_pag")
+        obs = st.text_area("Observação", key="novo_obs")
+        enviar = st.form_submit_button("Salvar lançamento")
 
-elif aba == "🔁 Alterar status":
+    if enviar:
+        if not descricao.strip():
+            st.error("Informe a descrição.")
+        elif valor <= 0:
+            st.error("Informe um valor maior que zero.")
+        else:
+            novo = {
+                "ID": proximo_id(df),
+                "Data": data_lanc.strftime("%Y-%m-%d"),
+                "Tipo": tipo,
+                "Descricao": descricao.strip(),
+                "Categoria": categoria,
+                "Valor": float(valor),
+                "Forma_Pagamento": forma,
+                "Status": status,
+                "Vencimento": venc.strftime("%Y-%m-%d"),
+                "Data_Pagamento": data_pag.strftime("%Y-%m-%d") if data_pag else "",
+                "Observacao": obs.strip(),
+            }
+            df = pd.concat([df, pd.DataFrame([novo])], ignore_index=True)
+            salvar(df)
+            st.success("Lançamento salvo com sucesso.")
+
+elif aba == "🔄 Status":
     st.subheader("Alterar status")
     if df.empty:
-        st.warning("Nenhum lançamento cadastrado.")
+        st.info("Nenhum lançamento cadastrado.")
     else:
-        df_op = df.copy()
-        df_op["rotulo"] = df_op.apply(
-            lambda r: f"{r['data_lancamento']} | {r['status']} | {r['tipo']} | {r['descricao']} | {moeda(r['valor'])}",
-            axis=1,
-        )
-        escolhido = st.selectbox("Selecione o lançamento", df_op["rotulo"].tolist())
-        linha = df_op[df_op["rotulo"] == escolhido].iloc[0]
-        st.write(f"**Descrição:** {linha['descricao']}")
-        st.write(f"**Valor:** {moeda(linha['valor'])}")
-        c1, c2 = st.columns(2)
-        with c1:
-            novo_status = st.selectbox("Novo status", STATUS, index=STATUS.index(linha["status"]) if linha["status"] in STATUS else 0)
-        with c2:
-            nova_data_pag = st.date_input("Data de pagamento", value=date.today(), format="DD/MM/YYYY")
-        c3, c4 = st.columns(2)
-        with c3:
-            if st.button("Atualizar status"):
-                try:
-                    atualizar_registro(linha["id"], {
-                        "status": novo_status,
-                        "data_pagamento": nova_data_pag.isoformat() if novo_status == "Pago" else "",
-                    })
-                    st.success("Status atualizado.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro ao atualizar: {e}")
-        with c4:
-            if st.button("Excluir lançamento"):
-                try:
-                    excluir_registro(linha["id"])
-                    st.success("Lançamento excluído.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro ao excluir: {e}")
+        df_ord = df.sort_values("ID", ascending=False).copy()
+        opcoes = []
+        mapa = {}
+        for _, r in df_ord.iterrows():
+            item = f"#{int(r['ID'])} | {r['Status']} | {r['Tipo']} | {r['Descricao']} | {moeda(r['Valor'])} | Venc.: {r.get('Vencimento','-')}"
+            opcoes.append(item)
+            mapa[item] = int(r["ID"])
+
+        escolhido = st.selectbox("Selecione o lançamento", opcoes, key="status_item")
+        novo_status = st.selectbox("Novo status", STATUS, key="status_novo")
+        data_pag = st.date_input("Data de pagamento", value=date.today(), format="DD/MM/YYYY", key="status_data_pag")
+
+        if st.button("Atualizar status"):
+            id_sel = mapa[escolhido]
+            df.loc[df["ID"] == id_sel, "Status"] = novo_status
+            if novo_status == "Pago":
+                df.loc[df["ID"] == id_sel, "Data_Pagamento"] = data_pag.strftime("%Y-%m-%d")
+            else:
+                df.loc[df["ID"] == id_sel, "Data_Pagamento"] = ""
+            salvar(df)
+            st.success("Status atualizado.")
 
 elif aba == "📊 Painel":
     st.subheader("Painel")
     if df.empty:
-        st.warning("Nenhum lançamento cadastrado.")
+        st.info("Cadastre seu primeiro lançamento.")
     else:
-        dfp = df.copy()
-        dfp["data_lancamento_dt"] = pd.to_datetime(dfp["data_lancamento"], errors="coerce")
-        min_data = dfp["data_lancamento_dt"].min().date() if dfp["data_lancamento_dt"].notna().any() else date.today()
-        max_data = dfp["data_lancamento_dt"].max().date() if dfp["data_lancamento_dt"].notna().any() else date.today()
-        c1, c2 = st.columns(2)
-        with c1:
-            dt_ini = st.date_input("Data inicial", value=min_data, format="DD/MM/YYYY")
-        with c2:
-            dt_fim = st.date_input("Data final", value=max_data, format="DD/MM/YYYY")
-        cats = st.multiselect("Categorias", CATEGORIAS, default=[])
-        mask = (dfp["data_lancamento_dt"].dt.date >= dt_ini) & (dfp["data_lancamento_dt"].dt.date <= dt_fim)
-        if cats:
-            mask &= dfp["categoria"].isin(cats)
-        dfp = dfp[mask].copy()
-        receitas = dfp[(dfp["tipo"] == "Receita") & (dfp["status"] != "Cancelado")]["valor"].sum()
-        despesas = dfp[(dfp["tipo"] == "Despesa") & (dfp["status"] != "Cancelado")]["valor"].sum()
-        aberto = dfp[(dfp["status"] == "Em aberto") & (dfp["tipo"] == "Despesa")]["valor"].sum()
-        saldo = receitas - despesas
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Receitas", moeda(receitas))
-        k2.metric("Despesas", moeda(despesas))
-        k3.metric("Saldo", moeda(saldo))
-        k4.metric("Em aberto", moeda(aberto))
-        if not dfp.empty:
-            resumo_cat = dfp[dfp["tipo"] == "Despesa"].groupby("categoria", as_index=False)["valor"].sum().sort_values("valor", ascending=False)
-            if not resumo_cat.empty:
-                fig = px.bar(resumo_cat, x="categoria", y="valor", title="Despesas por categoria", text_auto=".2s")
-                st.plotly_chart(fig, use_container_width=True)
-            mostra = dfp[["data_lancamento", "tipo", "descricao", "categoria", "valor", "forma_pagamento", "status", "data_vencimento", "data_pagamento"]].copy()
-            mostra["valor"] = mostra["valor"].apply(moeda)
-            st.dataframe(mostra, use_container_width=True, hide_index=True)
+        receita = df.loc[df["Tipo"] == "Receita", "Valor"].sum()
+        despesa = df.loc[df["Tipo"] == "Despesa", "Valor"].sum()
+        aberto = df.loc[df["Status"] == "Em aberto", "Valor"].sum()
+        saldo = receita - despesa
 
-elif aba == "📤 Exportar":
-    st.subheader("Exportar / Backup")
+        c1, c2 = st.columns(2)
+        c1.metric("Receitas", moeda(receita))
+        c2.metric("Despesas", moeda(despesa))
+        c1.metric("Saldo", moeda(saldo))
+        c2.metric("Em aberto", moeda(aberto))
+
+        resumo_tipo = df.groupby("Tipo", as_index=False)["Valor"].sum()
+        st.write("Resumo por tipo")
+        st.bar_chart(resumo_tipo.set_index("Tipo"))
+
+        resumo_cat = df.groupby("Categoria", as_index=False)["Valor"].sum().sort_values("Valor", ascending=False)
+        st.write("Resumo por categoria")
+        st.bar_chart(resumo_cat.set_index("Categoria"))
+
+        abertos = df[df["Status"] == "Em aberto"].sort_values("Vencimento")
+        st.write("Próximos vencimentos")
+        st.dataframe(formatar_tabela(abertos.head(10)), use_container_width=True, hide_index=True)
+
+elif aba == "📋 Lista":
+    st.subheader("Lançamentos")
     if df.empty:
-        st.warning("Nenhum dado para exportar.")
+        st.info("Nenhum lançamento cadastrado.")
     else:
-        st.download_button("Baixar Excel", data=to_excel_bytes(df), file_name="controle_financeiro.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        st.download_button("Baixar CSV", data=df.to_csv(index=False, encoding="utf-8-sig"), file_name="controle_financeiro.csv", mime="text/csv")
-    st.divider()
-    st.caption("Para restaurar dados no modo local, suba um CSV exportado anteriormente.")
-    arquivo = st.file_uploader("Restaurar CSV", type=["csv"])
-    if arquivo is not None and not usar_supabase():
-        try:
-            novo_df = limpar_df(pd.read_csv(arquivo, dtype=str))
-            salvar_local(novo_df)
-            st.success("Backup restaurado.")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Erro ao restaurar: {e}")
+        col1, col2 = st.columns(2)
+        filtro_tipo = col1.selectbox("Tipo", ["Todos"] + TIPOS, key="filtro_tipo")
+        filtro_status = col2.selectbox("Status", ["Todos"] + STATUS, key="filtro_status")
+        busca = st.text_input("Buscar descrição", key="busca")
+
+        vis = df.copy()
+        if filtro_tipo != "Todos":
+            vis = vis[vis["Tipo"] == filtro_tipo]
+        if filtro_status != "Todos":
+            vis = vis[vis["Status"] == filtro_status]
+        if busca.strip():
+            vis = vis[vis["Descricao"].str.contains(busca.strip(), case=False, na=False)]
+
+        vis = vis.sort_values("ID", ascending=False)
+        st.dataframe(formatar_tabela(vis), use_container_width=True, hide_index=True)
+
+        csv = vis.to_csv(index=False).encode("utf-8-sig")
+        st.download_button("Baixar CSV", csv, "controle_financeiro.csv", "text/csv")
+
+st.caption("Obs.: no Streamlit Cloud gratuito, arquivos locais podem ser reiniciados. Para uso definitivo com histórico permanente, o ideal é ligar em Supabase/Google Sheets.")
