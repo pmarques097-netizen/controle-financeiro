@@ -47,11 +47,62 @@ html, body, [data-testid="stAppViewContainer"] {background:#F7F8FC;}
 .tx-icon{width:42px;height:42px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
 .tx-main{flex:1}.tx-title{font-weight:820;color:#111827}.tx-sub{font-size:12px;color:#6B7280;margin-top:2px}.tx-value{font-weight:850;text-align:right;}
 .section-title{font-size:18px;font-weight:850;margin:16px 0 10px;}
-.stButton>button{width:100%;border-radius:16px;min-height:46px;font-weight:850;}
+.stButton>button{
+    width:100%;
+    border-radius:18px;
+    min-height:48px;
+    font-weight:850;
+    border:1px solid #E5E7EB;
+    background:#FFFFFF;
+    color:#334155;
+    box-shadow:0 6px 14px rgba(15,23,42,.06);
+}
+.stButton>button:hover{
+    border-color:#635BFF;
+    color:#4F46E5;
+    background:#EEF2FF;
+}
+.nav-wrap{
+    position:fixed;
+    left:50%;
+    bottom:10px;
+    transform:translateX(-50%);
+    width:calc(100% - 18px);
+    max-width:740px;
+    z-index:9999;
+    background:rgba(255,255,255,.96);
+    border:1px solid #E5E7EB;
+    box-shadow:0 16px 40px rgba(15,23,42,.18);
+    border-radius:26px;
+    padding:8px 8px 4px 8px;
+}
+.nav-label{
+    text-align:center;
+    font-size:11px;
+    font-weight:800;
+    color:#64748B;
+    margin-top:-5px;
+}
+.nav-label-active{color:#4F46E5;}
+
 .stTextInput input,.stNumberInput input,.stDateInput input,textarea{border-radius:16px!important;font-size:16px!important;}
 div[data-baseweb="select"]>div{border-radius:16px!important;}
 .bottom-spacer{height:40px;}
 @media(max-width:600px){.main .block-container{padding-left:.7rem;padding-right:.7rem}.kpi-value{font-size:19px}.top-title{font-size:21px}}
+
+div[role="radiogroup"]{
+    background:#FFFFFF;
+    border:1px solid #E5E7EB;
+    border-radius:22px;
+    padding:6px;
+    box-shadow:0 8px 20px rgba(15,23,42,.06);
+    margin-bottom:12px;
+}
+div[role="radiogroup"] label{
+    border-radius:16px !important;
+    padding:8px 10px !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -438,6 +489,20 @@ def admin_page(auth):
 def app_logado():
     auth = st.session_state["auth"]
     page = st.session_state.get("page", "Resumo")
+
+    menu_opcoes = ["Resumo", "Lançamentos", "Novo", "Relatórios", "Mais"]
+    page_selected = st.radio(
+        "Menu",
+        menu_opcoes,
+        horizontal=True,
+        index=menu_opcoes.index(page) if page in menu_opcoes else 0,
+        key="menu_superior",
+        label_visibility="collapsed"
+    )
+    if page_selected != page:
+        st.session_state["page"] = page_selected
+        st.rerun()
+    page = page_selected
     if page == "Resumo":
         st.markdown(f'<div class="topbar"><div><div class="top-title">Olá, {auth["nome"].split()[0]} 👋</div><div class="top-sub">{auth["empresa"]} - resumo financeiro</div></div><div class="avatar">{auth["nome"][0].upper()}</div></div>', unsafe_allow_html=True)
         mes, ano = filtro_mes_ano("resumo")
@@ -504,12 +569,23 @@ def app_logado():
                     else: st.warning("Confirme.")
 
     st.markdown('<div class="bottom-spacer"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="nav-wrap">', unsafe_allow_html=True)
+    nav_items = [
+        ("Resumo", "🏠", "Resumo"),
+        ("Lançamentos", "📋", "Lanç."),
+        ("Novo", "➕", "Novo"),
+        ("Relatórios", "📊", "Relat."),
+        ("Mais", "⚙️", "Mais"),
+    ]
     cols = st.columns(5)
-    for col, p in zip(cols, ["Resumo","Lançamentos","Novo","Relatórios","Mais"]):
+    for col, (page_name, icon, label) in zip(cols, nav_items):
         with col:
-            if st.button(("+" if p=="Novo" else p), key=f"nav_{p}"):
-                st.session_state["page"] = p
+            if st.button(icon, key=f"nav_{page_name}", help=page_name):
+                st.session_state["page"] = page_name
                 st.rerun()
+            active_class = "nav-label nav-label-active" if page == page_name else "nav-label"
+            st.markdown(f'<div class="{active_class}">{label}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 def main():
