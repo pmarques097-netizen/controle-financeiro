@@ -5,7 +5,7 @@ import os
 import pandas as pd
 from datetime import date, datetime
 
-APP_TITLE = "Controle Financeiro V8"
+APP_TITLE = "Controle Financeiro V10"
 DB_PATH = os.path.join(os.path.dirname(__file__), "financeiro_v8.db")
 CATEGORIAS_RECEITA = ["Salário", "Venda", "Serviço", "Transferência", "Outros"]
 CATEGORIAS_DESPESA = ["Alimentação", "Moradia", "Transporte", "Saúde", "Educação", "Cartão", "Empréstimo", "Lazer", "Impostos", "Fornecedor", "Outros"]
@@ -118,6 +118,26 @@ def brl(v):
         return "R$ 0,00"
 
 
+
+
+def aplicar_filtro_mes(df, coluna="data_vencimento", label="Mês"):
+    """Filtra o dataframe por mês usando a coluna de data informada."""
+    if df.empty or coluna not in df.columns:
+        return df, "Todos"
+    temp = df.copy()
+    temp[coluna + "_dt"] = pd.to_datetime(temp[coluna], errors="coerce")
+    meses = temp[temp[coluna + "_dt"].notna()].copy()
+    if meses.empty:
+        return temp, "Todos"
+    meses["mes_ref"] = meses[coluna + "_dt"].dt.to_period("M").astype(str)
+    opcoes = sorted(meses["mes_ref"].unique().tolist(), reverse=True)
+    mes_atual = pd.Timestamp.today().to_period("M").strftime("%Y-%m")
+    index_padrao = opcoes.index(mes_atual) + 1 if mes_atual in opcoes else 0
+    escolhido = st.selectbox(label, ["Todos"] + opcoes, index=index_padrao)
+    if escolhido != "Todos":
+        temp = temp[temp[coluna + "_dt"].dt.to_period("M").astype(str) == escolhido]
+    return temp, escolhido
+
 def tela_login():
     st.title("💰 Controle Financeiro")
     st.caption("Login por empresa")
@@ -191,7 +211,11 @@ def painel(auth):
     if df.empty:
         st.info("Nenhum lançamento cadastrado ainda.")
         return
+    df, mes_filtro = aplicar_filtro_mes(df, "data_vencimento", "Filtrar mês")
     df["valor"] = pd.to_numeric(df["valor"], errors="coerce").fillna(0)
+    if df.empty:
+        st.info("Nenhum lançamento encontrado para o mês selecionado.")
+        return
     receitas = df[df["tipo"] == "Receita"]["valor"].sum()
     despesas = df[df["tipo"] == "Despesa"]["valor"].sum()
     saldo = receitas - despesas
@@ -224,6 +248,10 @@ def alterar_status(auth):
     if df.empty:
         st.info("Nenhum lançamento para alterar.")
         return
+    df, _ = aplicar_filtro_mes(df, "data_vencimento", "Filtrar mês")
+    if df.empty:
+        st.info("Nenhum lançamento encontrado para o mês selecionado.")
+        return
     df["label"] = df.apply(lambda r: f"#{int(r['id'])} | {r['status']} | {r['tipo']} | {r['descricao']} | {brl(r['valor'])} | Venc.: {r['data_vencimento']}", axis=1)
     escolha = st.selectbox("Escolha o lançamento", df["label"].tolist())
     id_sel = int(escolha.split("|")[0].replace("#", "").strip())
@@ -239,12 +267,56 @@ def alterar_status(auth):
         st.rerun()
 
 
+def excluir_lancamento(auth):
+    st.subheader("🗑️ Excluir lançamento")
+    st.warning("Atenção: a exclusão é definitiva. Use somente quando tiver certeza.")
+    df = carregar_lancamentos(auth["empresa_id"])
+    if df.empty:
+        st.info("Nenhum lançamento para excluir.")
+        return
+
+    df, _ = aplicar_filtro_mes(df, "data_vencimento", "Filtrar mês")
+    if df.empty:
+        st.info("Nenhum lançamento encontrado para o mês selecionado.")
+        return
+
+    df["label"] = df.apply(
+        lambda r: f"#{int(r['id'])} | {r['status']} | {r['tipo']} | {r['descricao']} | {brl(r['valor'])} | Venc.: {r['data_vencimento']}",
+        axis=1,
+    )
+    escolha = st.selectbox("Escolha o lançamento para excluir", df["label"].tolist())
+    id_sel = int(escolha.split("|")[0].replace("#", "").strip())
+    registro = df[df["id"] == id_sel].iloc[0]
+
+    st.markdown(
+        f"""
+        <div class='card'>
+        <b>{registro['descricao']}</b><br>
+        Tipo: {registro['tipo']} | Categoria: {registro['categoria']}<br>
+        Valor: {brl(registro['valor'])}<br>
+        Status: {registro['status']} | Vencimento: {registro['data_vencimento']}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    confirmar = st.checkbox("Confirmo que quero excluir este lançamento")
+    if st.button("Excluir definitivamente", disabled=not confirmar):
+        conn = conectar()
+        conn.execute("DELETE FROM lancamentos WHERE id=? AND empresa_id=?", (id_sel, auth["empresa_id"]))
+        conn.commit()
+        conn.close()
+        st.success("Lançamento excluído.")
+        st.rerun()
+
+
 def listar(auth):
     st.subheader("📄 Lançamentos")
     df = carregar_lancamentos(auth["empresa_id"])
     if df.empty:
         st.info("Sem dados.")
         return
+    df, _ = aplicar_filtro_mes(df, "data_vencimento", "Filtrar mês")
     col1, col2 = st.columns(2)
     with col1:
         filtro_status = st.selectbox("Filtrar status", ["Todos"] + STATUS_OPCOES)
@@ -254,6 +326,9 @@ def listar(auth):
         df = df[df["status"] == filtro_status]
     if filtro_tipo != "Todos":
         df = df[df["tipo"] == filtro_tipo]
+    if df.empty:
+        st.info("Nenhum lançamento encontrado com os filtros selecionados.")
+        return
     df_show = df[["id", "tipo", "descricao", "categoria", "valor", "forma_pagamento", "status", "data_vencimento", "data_pagamento"]].copy()
     df_show["valor"] = df_show["valor"].apply(brl)
     st.dataframe(df_show, use_container_width=True, hide_index=True)
@@ -318,13 +393,14 @@ def main():
         return
     auth = st.session_state["auth"]
     menu_topo()
-    abas = ["Painel", "Novo", "Alterar Status", "Lançamentos"]
+    abas = ["Painel", "Novo", "Alterar Status", "Excluir", "Lançamentos"]
     if auth["perfil"] == "Admin":
         abas.append("Administração")
     escolha = st.radio("Menu", abas, horizontal=True, label_visibility="collapsed")
     if escolha == "Painel": painel(auth)
     elif escolha == "Novo": tela_lancamento(auth)
     elif escolha == "Alterar Status": alterar_status(auth)
+    elif escolha == "Excluir": excluir_lancamento(auth)
     elif escolha == "Lançamentos": listar(auth)
     elif escolha == "Administração": administracao(auth)
 
