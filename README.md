@@ -29,3 +29,8 @@ Main file: app.py
 
 ## Correção FIX
 - Corrigido erro StreamlitDuplicateElementId no filtro de mês/ano.
+
+
+## FIX2
+- Corrigido erro TypeError quando a empresa ainda não possui lançamentos.
+- DataFrame agora sempre inicia com colunas padrão.

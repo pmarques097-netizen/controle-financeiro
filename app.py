@@ -94,11 +94,31 @@ def resetar_senha(empresa,usuario,resposta,nova_senha):
     cur.execute("UPDATE usuarios SET senha_hash=? WHERE id=?", (senha_hash(nova_senha),row[0])); conn.commit(); conn.close(); return True,"Senha alterada com sucesso."
 
 def carregar_lancamentos(empresa_id):
-    conn=conectar(); df=pd.read_sql_query("SELECT * FROM lancamentos WHERE empresa_id=? ORDER BY date(data_lancamento) DESC, id DESC", conn, params=(empresa_id,)); conn.close()
-    if not df.empty:
-        df['valor']=pd.to_numeric(df['valor'],errors='coerce').fillna(0)
-        for c in ['data_lancamento','data_vencimento','data_pagamento']: df[c]=pd.to_datetime(df[c],errors='coerce')
-    return df
+    colunas = [
+        "id", "empresa_id", "tipo", "descricao", "categoria", "valor",
+        "forma_pagamento", "status", "data_lancamento", "data_vencimento",
+        "data_pagamento", "observacao", "criado_por", "criado_em", "atualizado_em"
+    ]
+    conn = conectar()
+    df = pd.read_sql_query(
+        "SELECT * FROM lancamentos WHERE empresa_id=? ORDER BY date(data_lancamento) DESC, id DESC",
+        conn,
+        params=(empresa_id,)
+    )
+    conn.close()
+
+    for col in colunas:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
+
+    if df.empty:
+        return df[colunas].copy()
+
+    df["valor"] = pd.to_numeric(df["valor"], errors="coerce").fillna(0)
+    for c in ["data_lancamento", "data_vencimento", "data_pagamento"]:
+        df[c] = pd.to_datetime(df[c], errors="coerce")
+
+    return df[colunas].copy()
 
 def filtrar_mes(df,mes,ano):
     if df.empty: return df
@@ -153,10 +173,24 @@ def filtro_mes_ano():
     return int(mes),int(ano)
 
 def cards(df):
-    rec=df[(df['tipo']=='Receita')&(df['status']!='Cancelado')]['valor'].sum() if not df.empty else 0
-    desp=df[(df['tipo']=='Despesa')&(df['status']!='Cancelado')]['valor'].sum() if not df.empty else 0
-    saldo=rec-desp; qtd=len(df) if not df.empty else 0
-    st.markdown(f'<div class="kpi-grid"><div class="kpi-card"><div class="kpi-label">Receitas</div><div class="kpi-value green">{brl(rec)}</div></div><div class="kpi-card"><div class="kpi-label">Despesas</div><div class="kpi-value red">{brl(desp)}</div></div><div class="kpi-card"><div class="kpi-label">Saldo do mês</div><div class="kpi-value blue">{brl(saldo)}</div></div><div class="kpi-card"><div class="kpi-label">Lançamentos</div><div class="kpi-value">{qtd}</div></div></div>', unsafe_allow_html=True)
+    if df is None or df.empty or "tipo" not in df.columns or "status" not in df.columns or "valor" not in df.columns:
+        receitas = despesas = saldo = 0
+        qtd = 0
+    else:
+        receitas = df[(df["tipo"] == "Receita") & (df["status"] != "Cancelado")]["valor"].sum()
+        despesas = df[(df["tipo"] == "Despesa") & (df["status"] != "Cancelado")]["valor"].sum()
+        saldo = receitas - despesas
+        qtd = len(df)
+
+    st.markdown(f"""
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Receitas</div><div class="kpi-value green">{brl(receitas)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Despesas</div><div class="kpi-value red">{brl(despesas)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Saldo do mês</div><div class="kpi-value blue">{brl(saldo)}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Lançamentos</div><div class="kpi-value">{qtd}</div></div>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 def form_lancamento(default=None,form_key='form'):
     default=default or {}; tipo_default=default.get('tipo','Despesa')
