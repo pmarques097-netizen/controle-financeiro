@@ -1,8 +1,8 @@
-# Casa Marques Financeiro - Final Mobile
+# Casa Marques Financeiro - Modelo 6 Botões 3D
 
 Acesso:
 - Empresa: Casa Marques
 - Usuário: paulo | Senha: 031730 | Admin
 - Usuário: mara | Senha: 031730 | Usuario
 
-Modelo mobile com cards grandes, botões grandes e visual moderno.
+Versão com botões 3D Premium Modelo 6.
