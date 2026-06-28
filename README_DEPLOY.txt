@@ -1,21 +1,21 @@
-Controle Financeiro V10 - Login, Empresa, Filtro por Mês e Exclusão de Lançamentos
+CONTROLE FINANCEIRO V8 - LOGIN + EMPRESA
 
 Acesso inicial:
 Empresa: Pessoal
-Usuário: admin
+Usuario: admin
 Senha: admin123
 
-Novidades da V10:
-- Filtro por mês
-- Login por empresa
-- Cadastro de usuários
-- Alterar status
-- Excluir lançamento com confirmação
+Depois de entrar, acesse Administração para criar empresas e usuários.
 
 Para executar local:
-pip install -r requirements.txt
-streamlit run app.py
+1) Extraia o ZIP
+2) Dê duplo clique em executar.bat
 
 Para Streamlit Cloud:
-Suba app.py, requirements.txt e a pasta .streamlit no GitHub.
-Arquivo principal: app.py
+1) Suba app.py, requirements.txt e a pasta .streamlit no GitHub
+2) No Streamlit Cloud, use:
+   Branch: main
+   Main file: app.py
+3) Clique Deploy/Reboot.
+
+Observação: no Streamlit Cloud, arquivos locais podem reiniciar em alguns casos. Para uso profissional contínuo, o ideal é depois migrar o banco para Supabase/PostgreSQL.
