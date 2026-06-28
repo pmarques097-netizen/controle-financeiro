@@ -25,3 +25,7 @@ Usuários:
 
 ## Streamlit Cloud
 Main file: app.py
+
+
+## Correção FIX
+- Corrigido erro StreamlitDuplicateElementId no filtro de mês/ano.

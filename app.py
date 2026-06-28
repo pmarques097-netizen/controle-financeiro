@@ -209,7 +209,7 @@ def nav_bottom(page):
 
 def pagina_resumo(auth):
     st.markdown(f"""<div class="topbar"><div><div class="top-title">Olá, {auth['nome'].split()[0]} 👋</div><div class="top-sub">{auth['empresa']} - resumo financeiro</div></div><div class="avatar">{auth['nome'][0].upper()}</div></div>""", unsafe_allow_html=True)
-    mes,ano=filtro_mes_ano(); df=carregar_lancamentos(auth['empresa_id']); df_mes=filtrar_mes(df,mes,ano); cards(df_mes); st.markdown('<div class="section-title">Últimos lançamentos</div>',unsafe_allow_html=True); lista_cards(df_mes); return df_mes
+    mes,ano=filtro_mes_ano('principal'); df=carregar_lancamentos(auth['empresa_id']); df_mes=filtrar_mes(df,mes,ano); cards(df_mes); st.markdown('<div class="section-title">Últimos lançamentos</div>',unsafe_allow_html=True); lista_cards(df_mes); return df_mes
 
 def pagina_lancamentos(auth,df_mes):
     st.markdown('<div class="topbar"><div><div class="top-title">Lançamentos</div><div class="top-sub">Consulte e filtre seus registros</div></div></div>',unsafe_allow_html=True)
@@ -271,7 +271,7 @@ def app_logado():
     if page=='Resumo': pagina_resumo(auth)
     else:
         if page in ['Lançamentos','Relatórios']:
-            mes,ano=filtro_mes_ano(); df_mes=filtrar_mes(carregar_lancamentos(auth['empresa_id']),mes,ano)
+            mes,ano=filtro_mes_ano('principal'); df_mes=filtrar_mes(carregar_lancamentos(auth['empresa_id']),mes,ano)
         else:
             h=date.today(); df_mes=filtrar_mes(carregar_lancamentos(auth['empresa_id']),h.month,h.year)
         if page=='Lançamentos': pagina_lancamentos(auth,df_mes)
@@ -283,7 +283,7 @@ def app_logado():
         elif page=='Relatórios': pagina_relatorios(df_mes)
         elif page=='Mais': administracao(auth)
     with st.expander('Ações rápidas: editar, status ou excluir lançamento'):
-        mes,ano=filtro_mes_ano(); df=carregar_lancamentos(auth['empresa_id']); df2=filtrar_mes(df,mes,ano); tab1,tab2,tab3=st.tabs(['Editar','Status','Excluir'])
+        mes,ano=filtro_mes_ano('principal'); df=carregar_lancamentos(auth['empresa_id']); df2=filtrar_mes(df,mes,ano); tab1,tab2,tab3=st.tabs(['Editar','Status','Excluir'])
         with tab1:
             lid=selecionar_lancamento(df2,'Escolha para editar')
             if lid:
