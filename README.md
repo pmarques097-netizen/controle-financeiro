@@ -1,23 +1,20 @@
-# Controle Financeiro V13
-
-Versão com:
-- Login por empresa
-- Cadastro público para quem receber o link
-- Criação automática de empresa
-- Primeiro usuário da empresa vira admin
-- Esqueci minha senha com pergunta/resposta
-- Admin: criar usuário, excluir usuário, ativar/inativar, trocar senha
-- Filtro por mês
-- Novo, editar, alterar status e excluir lançamento
+# Controle Financeiro Streamlit Cloud - Versão Profissional
 
 ## Acesso inicial
 Empresa: Pessoal  
 Usuário: admin  
 Senha: admin123
 
+## Recursos
+- Visual profissional
+- Login por empresa
+- Cadastro público para quem receber o link
+- Esqueci minha senha
+- Admin cria empresas e usuários
+- Admin troca senha, inativa e exclui usuários
+- Filtro por mês
+- Novo, alterar, alterar status e excluir lançamento
+- Exportação CSV
+
 ## Streamlit Cloud
 Main file: app.py
-
-## Local
-pip install -r requirements.txt
-streamlit run app.py
