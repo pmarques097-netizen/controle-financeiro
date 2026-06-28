@@ -1,18 +1,14 @@
-# Controle Financeiro V14 Profissional
+# Controle Financeiro V13
 
-Versão profissional para Streamlit Cloud.
-
-## Recursos
-- Tela de login mais profissional
+Versão com:
+- Login por empresa
 - Cadastro público para quem receber o link
-- Criação de empresa
-- Primeiro usuário de uma nova empresa vira admin
+- Criação automática de empresa
+- Primeiro usuário da empresa vira admin
 - Esqueci minha senha com pergunta/resposta
-- Admin: cria/exclui usuários, troca senha e ativa/inativa
-- Painel executivo
+- Admin: criar usuário, excluir usuário, ativar/inativar, trocar senha
 - Filtro por mês
-- Novo, editar, alterar status e excluir lançamentos
-- Exportação CSV
+- Novo, editar, alterar status e excluir lançamento
 
 ## Acesso inicial
 Empresa: Pessoal  
@@ -21,3 +17,7 @@ Senha: admin123
 
 ## Streamlit Cloud
 Main file: app.py
+
+## Local
+pip install -r requirements.txt
+streamlit run app.py
