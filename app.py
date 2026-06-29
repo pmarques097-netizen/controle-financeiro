@@ -25,7 +25,11 @@ st.set_page_config(page_title="Casa Marques Financeiro", page_icon="💼", layou
 st.markdown("""
 <style>
 html, body, [data-testid="stAppViewContainer"] {background:#eef3fb; margin:0!important; padding:0!important;}
-/* Correção do espaço branco no topo - compatível com versões novas do Streamlit Cloud */
+/* Remove totalmente o espaço superior padrão do Streamlit */
+#root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] > .main,
+section.main, main, div[data-testid="stMain"], div[data-testid="stMain"] > div {
+    margin-top:0!important; padding-top:0!important; top:0!important;
+}
 .main .block-container,
 .block-container,
 [data-testid="stMainBlockContainer"],
@@ -37,23 +41,23 @@ html, body, [data-testid="stAppViewContainer"] {background:#eef3fb; margin:0!imp
     margin-top:0!important;
     max-width:520px!important;
 }
-section.main, main, [data-testid="stAppViewContainer"] .main {padding-top:0!important; margin-top:0!important;}
+div[data-testid="stVerticalBlock"], div[data-testid="stVerticalBlock"] > div {gap:0!important;}
 [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], [data-testid="stSidebar"], #MainMenu, footer, header {display:none!important; visibility:hidden!important; height:0!important;}
 
-.app-shell{background:#f6f8ff;min-height:100vh;border-radius:0;overflow:hidden;}
+.app-shell{background:#f6f8ff;min-height:100vh;border-radius:0;overflow:hidden;margin-top:0!important;padding-top:0!important;}
 .hero{
     background:
       radial-gradient(circle at 86% 20%, rgba(124,58,237,.38) 0, rgba(124,58,237,0) 26%),
       radial-gradient(circle at 40% 10%, rgba(37,99,235,.35) 0, rgba(37,99,235,0) 28%),
       linear-gradient(145deg,#06091f 0%,#0b1034 58%,#130a3d 100%);
-    color:white;padding:28px 22px 72px;border-radius:0 0 36px 36px;position:relative;margin-top:0!important;
+    color:white;padding:24px 22px 58px;border-radius:0 0 34px 34px;position:relative;margin-top:0!important;
 }
 .hero-row{display:flex;align-items:center;gap:18px;}
 .avatar-big{width:66px;height:66px;border-radius:50%;background:linear-gradient(145deg,#7c3aed,#5b42ff);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:950;box-shadow:0 18px 36px rgba(91,66,255,.45);}
 .hero-title{font-size:28px;font-weight:950;letter-spacing:-.04em;line-height:1.0;}
 .hero-sub{font-size:14px;color:#cbd5e1;font-weight:700;margin-top:8px;}
 .hero-actions{margin-left:auto;display:flex;gap:14px;font-size:30px;align-items:center;}
-.content{padding:0 18px;margin-top:-56px;position:relative;z-index:2;}
+.content{padding:0 18px;margin-top:-44px;position:relative;z-index:2;}
 .kpi-scroll{display:grid;grid-template-columns:repeat(4, minmax(155px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px;}
 .kpi{background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1px solid rgba(226,232,240,.9);border-radius:26px;padding:17px;min-height:142px;box-shadow:0 16px 34px rgba(15,23,42,.12);}
 .kpi-icon{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;color:white;box-shadow:inset 0 2px 8px rgba(255,255,255,.35),0 10px 18px rgba(15,23,42,.15);}
@@ -129,6 +133,34 @@ section.main, main, [data-testid="stAppViewContainer"] .main {padding-top:0!impo
     font-size:15px!important;
     box-shadow:0 14px 24px rgba(91,66,255,.42)!important;
 }
+
+/* MENU PRINCIPAL - cards grandes, bonitos e 100% clicáveis */
+.menu-actions .stButton>button{
+    min-height:96px!important;
+    border-radius:24px!important;
+    background:#ffffff!important;
+    color:#111827!important;
+    border:1px solid #e8edf5!important;
+    box-shadow:0 14px 28px rgba(15,23,42,.10)!important;
+    text-align:left!important;
+    white-space:pre-line!important;
+    font-size:17px!important;
+    line-height:1.25!important;
+    font-weight:950!important;
+    padding:16px 20px!important;
+}
+.menu-actions .stButton>button:hover{transform:translateY(-1px);box-shadow:0 18px 34px rgba(15,23,42,.14)!important;}
+.menu-actions .stButton>button p{margin:0!important;}
+.menu-actions .novo-btn .stButton>button{
+    background:linear-gradient(145deg,#7c3aed,#5b42ff)!important;
+    color:white!important;
+    border:1px solid rgba(124,58,237,.35)!important;
+    box-shadow:0 18px 34px rgba(91,66,255,.28)!important;
+}
+.menu-actions .rel-btn .stButton>button{background:linear-gradient(145deg,#fff7ed,#ffffff)!important;border-color:#fed7aa!important;}
+.menu-actions .res-btn .stButton>button{background:linear-gradient(145deg,#eff6ff,#ffffff)!important;border-color:#bfdbfe!important;}
+.menu-actions .lan-btn .stButton>button{background:linear-gradient(145deg,#f5f3ff,#ffffff)!important;border-color:#ddd6fe!important;}
+.menu-actions .mais-btn .stButton>button{background:linear-gradient(145deg,#f8fafc,#ffffff)!important;}
 
 
 .login-wrap{min-height:92vh;padding:30px 22px;border-radius:0 0 34px 34px;background:radial-gradient(circle at 30% 0%,#5742ff 0%,#1B124D 42%,#060B1B 100%);color:white;}
@@ -255,30 +287,38 @@ def kpis(df):
     st.markdown(html, unsafe_allow_html=True)
 
 def quick_buttons():
-    # Botões reais do Streamlit: a área visual é a mesma área clicável.
-    st.markdown('<div class="quick-actions">', unsafe_allow_html=True)
-    c1, c2 = st.columns(2, gap="medium")
-    with c1:
-        if st.button("⬆\nRECEITAS\nCadastrar entrada", key="q_receita", use_container_width=True):
-            st.session_state["page"] = "Novo"
-            st.session_state["tipo_rapido"] = "Receita"
-            st.rerun()
-    with c2:
-        if st.button("⬇\nDESPESAS\nCadastrar saída", key="q_despesa", use_container_width=True):
-            st.session_state["page"] = "Novo"
-            st.session_state["tipo_rapido"] = "Despesa"
-            st.rerun()
-    st.markdown('</div><div style="height:14px"></div><div class="quick-actions quick-actions-2">', unsafe_allow_html=True)
-    c3, c4 = st.columns(2, gap="medium")
-    with c3:
-        if st.button("📊\nRELATÓRIOS\nAnálise e gráficos", key="q_rel", use_container_width=True):
-            st.session_state["page"] = "Relatórios"
-            st.rerun()
-    with c4:
-        if st.button("⚙\nADMIN\nConfigurações", key="q_admin", use_container_width=True):
-            st.session_state["page"] = "Mais"
-            st.rerun()
+    # Menu principal com botões reais do Streamlit: visual e clique são a mesma área.
+    st.markdown('<div class="menu-actions">', unsafe_allow_html=True)
+
+    st.markdown('<div class="res-btn">', unsafe_allow_html=True)
+    if st.button("🏠  Resumo\nVisão geral do desempenho     ›", key="menu_resumo", use_container_width=True):
+        st.session_state["page"] = "Resumo"
+        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div style="height:12px"></div><div class="lan-btn">', unsafe_allow_html=True)
+    if st.button("📋  Lançamentos\nLançamentos financeiros     ›", key="menu_lancamentos", use_container_width=True):
+        st.session_state["page"] = "Lançamentos"
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div style="height:12px"></div><div class="novo-btn">', unsafe_allow_html=True)
+    if st.button("＋  Novo\nCriar novo lançamento     ›", key="menu_novo", use_container_width=True):
+        st.session_state["page"] = "Novo"
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div style="height:12px"></div><div class="rel-btn">', unsafe_allow_html=True)
+    if st.button("📊  Relatórios\nRelatórios e análises     ›", key="menu_relatorios", use_container_width=True):
+        st.session_state["page"] = "Relatórios"
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div style="height:12px"></div><div class="mais-btn">', unsafe_allow_html=True)
+    if st.button("•••  Mais\nMais opções e configurações     ›", key="menu_mais", use_container_width=True):
+        st.session_state["page"] = "Mais"
+        st.rerun()
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
 def tx_icon(tipo,categoria):
     if tipo=="Receita": return "⬆","#dcfce7"
