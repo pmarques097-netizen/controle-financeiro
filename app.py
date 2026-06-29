@@ -85,6 +85,16 @@ div[data-baseweb="select"]>div,.stTextInput input,.stNumberInput input,.stDateIn
 .user-row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #EEF1F6;border-radius:20px;padding:14px;margin-bottom:10px;}
 .user-ball{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;background:linear-gradient(145deg,#22C55E,#16A34A);}
 .bottom-spacer{height:28px;}
+
+/* Botões reais dos cards 3D */
+button[aria-label="Abrir Receita"], button[aria-label="Abrir Despesa"],
+button[aria-label="Abrir Relatórios"], button[aria-label="Abrir Admin"] {
+    min-height: 56px !important;
+}
+div[data-testid="stButton"] button {
+    font-size: 14px !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,8 +124,31 @@ def init_db():
         emp_id = cur.lastrowid
     for usuario, nome, senha, perfil in USUARIOS_INICIAIS:
         cur.execute("SELECT id FROM usuarios WHERE empresa_id=? AND lower(usuario)=lower(?)", (emp_id, usuario))
-        if not cur.fetchone():
-            cur.execute("INSERT INTO usuarios (empresa_id,usuario,nome,senha_hash,perfil,status,pergunta,resposta_hash,criado_em) VALUES (?,?,?,?,?,'Ativo','Código de recuperação',?,?)", (emp_id, usuario, nome, senha_hash(senha), perfil, senha_hash(senha), agora))
+        row_u = cur.fetchone()
+        if row_u:
+            cur.execute("""
+                UPDATE usuarios
+                SET nome=?, senha_hash=?, perfil=?, status='Ativo',
+                    pergunta='Código de recuperação', resposta_hash=?
+                WHERE id=?
+            """, (nome, senha_hash(senha), perfil, senha_hash(senha), row_u[0]))
+        else:
+            cur.execute("""
+                INSERT INTO usuarios
+                (empresa_id,usuario,nome,senha_hash,perfil,status,pergunta,resposta_hash,criado_em)
+                VALUES (?,?,?,?,?,'Ativo','Código de recuperação',?,?)
+            """, (emp_id, usuario, nome, senha_hash(senha), perfil, senha_hash(senha), agora))
+
+    # Remove empresa Pessoal/admin antigo se estiver vazio, para evitar confusão no login
+    cur.execute("SELECT id FROM empresas WHERE lower(nome)=lower('Pessoal')")
+    row_p = cur.fetchone()
+    if row_p:
+        pessoal_id = row_p[0]
+        cur.execute("SELECT COUNT(*) FROM lancamentos WHERE empresa_id=?", (pessoal_id,))
+        if cur.fetchone()[0] == 0:
+            cur.execute("DELETE FROM usuarios WHERE empresa_id=?", (pessoal_id,))
+            cur.execute("DELETE FROM empresas WHERE id=?", (pessoal_id,))
+
     con.commit()
     con.close()
 
@@ -251,6 +284,9 @@ def login():
             else:
                 st.error("Empresa, usuário ou senha inválidos.")
         st.caption("Casa Marques | paulo ou mara | 031730")
+        if st.button("Atualizar usuários padrão", key="atualizar_users_login"):
+            init_db()
+            st.success("Usuários paulo e mara atualizados para senha 031730.")
     with t2:
         with st.form("cad"):
             empresa = st.text_input("Empresa")
@@ -300,14 +336,33 @@ def kpi_cards(df):
     """, unsafe_allow_html=True)
 
 def modelo6_buttons():
-    st.markdown("""
-    <div class="model6-grid">
-      <div class="btn3d btn-receita"><div class="btn3d-icon">💼</div><div class="btn3d-title">RECEITAS</div><div class="btn3d-sub">Entradas do mês</div></div>
-      <div class="btn3d btn-despesa"><div class="btn3d-icon">💳</div><div class="btn3d-title">DESPESAS</div><div class="btn3d-sub">Saídas do mês</div></div>
-      <div class="btn3d btn-relatorio"><div class="btn3d-icon">📊</div><div class="btn3d-title">RELATÓRIOS</div><div class="btn3d-sub">Análise mensal</div></div>
-      <div class="btn3d btn-admin"><div class="btn3d-icon">⚙️</div><div class="btn3d-title">ADMIN</div><div class="btn3d-sub">Usuários e acesso</div></div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="section">Acesso rápido</div>', unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown('<div class="btn3d btn-receita"><div class="btn3d-icon">💼</div><div class="btn3d-title">RECEITAS</div><div class="btn3d-sub">Cadastrar entrada</div></div>', unsafe_allow_html=True)
+        if st.button("Abrir Receita", key="btn3d_receita"):
+            st.session_state["page"] = "Novo"
+            st.session_state["tipo_rapido"] = "Receita"
+            st.rerun()
+    with c2:
+        st.markdown('<div class="btn3d btn-despesa"><div class="btn3d-icon">💳</div><div class="btn3d-title">DESPESAS</div><div class="btn3d-sub">Cadastrar saída</div></div>', unsafe_allow_html=True)
+        if st.button("Abrir Despesa", key="btn3d_despesa"):
+            st.session_state["page"] = "Novo"
+            st.session_state["tipo_rapido"] = "Despesa"
+            st.rerun()
+
+    c3, c4 = st.columns(2)
+    with c3:
+        st.markdown('<div class="btn3d btn-relatorio"><div class="btn3d-icon">📊</div><div class="btn3d-title">RELATÓRIOS</div><div class="btn3d-sub">Análise mensal</div></div>', unsafe_allow_html=True)
+        if st.button("Abrir Relatórios", key="btn3d_relatorio"):
+            st.session_state["page"] = "Relatórios"
+            st.rerun()
+    with c4:
+        st.markdown('<div class="btn3d btn-admin"><div class="btn3d-icon">⚙️</div><div class="btn3d-title">ADMIN</div><div class="btn3d-sub">Usuários e acesso</div></div>', unsafe_allow_html=True)
+        if st.button("Abrir Admin", key="btn3d_admin"):
+            st.session_state["page"] = "Admin"
+            st.rerun()
 
 def tx_icon(tipo,categoria):
     if tipo=="Receita": return "💼","#DDFBE8"
@@ -333,7 +388,9 @@ def form_lanc(default=None,key="novo"):
         c1,c2 = st.columns(2)
         with c1: st.markdown('<div class="receita-btn">⬆<br>Receita</div>', unsafe_allow_html=True)
         with c2: st.markdown('<div class="despesa-btn">⬇<br>Despesa</div>', unsafe_allow_html=True)
-        tipo = st.radio("Tipo", ["Receita","Despesa"], horizontal=True, index=0 if default.get("tipo")=="Receita" else 1)
+        tipo_pre = st.session_state.pop("tipo_rapido", None) if key == "novo" else None
+        tipo_padrao = tipo_pre or default.get("tipo")
+        tipo = st.radio("Tipo", ["Receita","Despesa"], horizontal=True, index=0 if tipo_padrao=="Receita" else 1)
         cats = CATEGORIAS[tipo]
         data = st.date_input("Data", value=pd.to_datetime(default.get("data_lancamento")).date() if default.get("data_lancamento") is not None and pd.notna(default.get("data_lancamento")) else date.today())
         descricao = st.text_input("Descrição", value=default.get("descricao","") or "")
