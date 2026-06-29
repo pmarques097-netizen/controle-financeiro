@@ -24,9 +24,21 @@ st.set_page_config(page_title="Casa Marques Financeiro", page_icon="💼", layou
 
 st.markdown("""
 <style>
-html, body, [data-testid="stAppViewContainer"] {background:#eef3fb;}
-.main .block-container {padding:0 0 116px 0; max-width:520px;}
-[data-testid="stSidebar"], #MainMenu, footer, header {display:none; visibility:hidden;}
+html, body, [data-testid="stAppViewContainer"] {background:#eef3fb; margin:0!important; padding:0!important;}
+/* Correção do espaço branco no topo - compatível com versões novas do Streamlit Cloud */
+.main .block-container,
+.block-container,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"] {
+    padding-top:0!important;
+    padding-left:0!important;
+    padding-right:0!important;
+    padding-bottom:116px!important;
+    margin-top:0!important;
+    max-width:520px!important;
+}
+section.main, main, [data-testid="stAppViewContainer"] .main {padding-top:0!important; margin-top:0!important;}
+[data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], [data-testid="stSidebar"], #MainMenu, footer, header {display:none!important; visibility:hidden!important; height:0!important;}
 
 .app-shell{background:#f6f8ff;min-height:100vh;border-radius:0;overflow:hidden;}
 .hero{
@@ -34,14 +46,14 @@ html, body, [data-testid="stAppViewContainer"] {background:#eef3fb;}
       radial-gradient(circle at 86% 20%, rgba(124,58,237,.38) 0, rgba(124,58,237,0) 26%),
       radial-gradient(circle at 40% 10%, rgba(37,99,235,.35) 0, rgba(37,99,235,0) 28%),
       linear-gradient(145deg,#06091f 0%,#0b1034 58%,#130a3d 100%);
-    color:white;padding:34px 22px 86px;border-radius:0 0 36px 36px;position:relative;
+    color:white;padding:28px 22px 72px;border-radius:0 0 36px 36px;position:relative;margin-top:0!important;
 }
 .hero-row{display:flex;align-items:center;gap:18px;}
 .avatar-big{width:66px;height:66px;border-radius:50%;background:linear-gradient(145deg,#7c3aed,#5b42ff);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:950;box-shadow:0 18px 36px rgba(91,66,255,.45);}
 .hero-title{font-size:28px;font-weight:950;letter-spacing:-.04em;line-height:1.0;}
 .hero-sub{font-size:14px;color:#cbd5e1;font-weight:700;margin-top:8px;}
 .hero-actions{margin-left:auto;display:flex;gap:14px;font-size:30px;align-items:center;}
-.content{padding:0 18px;margin-top:-64px;position:relative;z-index:2;}
+.content{padding:0 18px;margin-top:-56px;position:relative;z-index:2;}
 .kpi-scroll{display:grid;grid-template-columns:repeat(4, minmax(155px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px;}
 .kpi{background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1px solid rgba(226,232,240,.9);border-radius:26px;padding:17px;min-height:142px;box-shadow:0 16px 34px rgba(15,23,42,.12);}
 .kpi-icon{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;color:white;box-shadow:inset 0 2px 8px rgba(255,255,255,.35),0 10px 18px rgba(15,23,42,.15);}
