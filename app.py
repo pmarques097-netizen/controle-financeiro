@@ -24,7 +24,18 @@ st.set_page_config(page_title="Casa Marques Financeiro", page_icon="💼", layou
 
 st.markdown("""
 <style>
-html, body, [data-testid="stAppViewContainer"] {background:#eef3fb; margin:0!important; padding:0!important;}
+html, body, [data-testid="stAppViewContainer"] {background:#eef3fb; margin:0!important; padding:0!important; overflow-x:hidden!important;}
+/* CORREÇÃO FINAL: elimina espaço em branco acima do aplicativo no Streamlit Cloud/Desktop */
+.stApp { margin:0!important; padding:0!important; }
+.stMain, section[data-testid="stMain"], main[data-testid="stMain"], div[data-testid="stMain"] {
+    margin:0!important; padding:0!important; top:0!important; align-items:flex-start!important;
+}
+.stMain > div, section[data-testid="stMain"] > div, div[data-testid="stMain"] > div {
+    margin:0!important; padding:0!important; top:0!important;
+}
+div[data-testid="stElementContainer"]:empty, div[data-testid="stMarkdownContainer"]:empty {
+    display:none!important; height:0!important; margin:0!important; padding:0!important;
+}
 /* Remove totalmente o espaço superior padrão do Streamlit */
 #root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stAppViewContainer"] > .main,
 section.main, main, div[data-testid="stMain"], div[data-testid="stMain"] > div {
@@ -37,27 +48,28 @@ section.main, main, div[data-testid="stMain"], div[data-testid="stMain"] > div {
     padding-top:0!important;
     padding-left:0!important;
     padding-right:0!important;
-    padding-bottom:116px!important;
+    padding-bottom:96px!important;
     margin-top:0!important;
-    max-width:520px!important;
+    max-width:100%!important;
+    width:100%!important;
 }
 div[data-testid="stVerticalBlock"], div[data-testid="stVerticalBlock"] > div {gap:0!important;}
 [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"], [data-testid="stSidebar"], #MainMenu, footer, header {display:none!important; visibility:hidden!important; height:0!important;}
 
-.app-shell{background:#f6f8ff;min-height:100vh;border-radius:0;overflow:hidden;margin-top:0!important;padding-top:0!important;}
+.app-shell{background:#f6f8ff;min-height:100vh;border-radius:0;overflow:hidden;margin:0!important;padding:0 0 96px 0!important;width:100%!important;}
 .hero{
     background:
       radial-gradient(circle at 86% 20%, rgba(124,58,237,.38) 0, rgba(124,58,237,0) 26%),
       radial-gradient(circle at 40% 10%, rgba(37,99,235,.35) 0, rgba(37,99,235,0) 28%),
       linear-gradient(145deg,#06091f 0%,#0b1034 58%,#130a3d 100%);
-    color:white;padding:24px 22px 58px;border-radius:0 0 34px 34px;position:relative;margin-top:0!important;
+    color:white;padding:28px max(22px,calc((100vw - 1160px)/2)) 64px;border-radius:0;position:relative;margin:0!important;
 }
 .hero-row{display:flex;align-items:center;gap:18px;}
 .avatar-big{width:66px;height:66px;border-radius:50%;background:linear-gradient(145deg,#7c3aed,#5b42ff);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:950;box-shadow:0 18px 36px rgba(91,66,255,.45);}
 .hero-title{font-size:28px;font-weight:950;letter-spacing:-.04em;line-height:1.0;}
 .hero-sub{font-size:14px;color:#cbd5e1;font-weight:700;margin-top:8px;}
 .hero-actions{margin-left:auto;display:flex;gap:14px;font-size:30px;align-items:center;}
-.content{padding:0 18px;margin-top:-44px;position:relative;z-index:2;}
+.content{padding:0 18px;margin:-38px auto 0 auto;position:relative;z-index:2;max-width:1160px;width:100%;box-sizing:border-box;}
 .kpi-scroll{display:grid;grid-template-columns:repeat(4, minmax(155px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px;}
 .kpi{background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1px solid rgba(226,232,240,.9);border-radius:26px;padding:17px;min-height:142px;box-shadow:0 16px 34px rgba(15,23,42,.12);}
 .kpi-icon{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;color:white;box-shadow:inset 0 2px 8px rgba(255,255,255,.35),0 10px 18px rgba(15,23,42,.15);}
@@ -88,7 +100,7 @@ div[data-testid="stVerticalBlock"], div[data-testid="stVerticalBlock"] > div {ga
 .tx-val{text-align:right;font-weight:950;font-size:14px}.tx-date{font-size:12px;color:#64748b;font-weight:700;margin-top:2px}
 .section-title{font-size:22px;font-weight:950;letter-spacing:-.04em;color:#111827;margin:18px 0 12px;}
 
-.bottom-nav{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:calc(100% - 18px);max-width:520px;background:#080b22;border:1px solid rgba(255,255,255,.12);border-radius:30px;padding:10px 8px;box-shadow:0 22px 46px rgba(15,23,42,.35);z-index:9999;}
+.bottom-nav{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:calc(100% - 32px);max-width:1160px;background:#080b22;border:1px solid rgba(255,255,255,.12);border-radius:30px;padding:10px 8px;box-shadow:0 22px 46px rgba(15,23,42,.35);z-index:9999;}
 .nav-cols{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;}
 .nav-cell{text-align:center;color:#cbd5e1;font-size:11px;font-weight:900;}
 .nav-icon{font-size:24px;line-height:1.1;margin-bottom:3px;}
@@ -136,8 +148,8 @@ div[data-testid="stVerticalBlock"], div[data-testid="stVerticalBlock"] > div {ga
 
 /* MENU PRINCIPAL - cards grandes, bonitos e 100% clicáveis */
 .menu-actions .stButton>button{
-    min-height:96px!important;
-    border-radius:24px!important;
+    min-height:88px!important;
+    border-radius:18px!important;
     background:#ffffff!important;
     color:#111827!important;
     border:1px solid #e8edf5!important;
@@ -173,7 +185,12 @@ div[data-baseweb="select"]>div,.stTextInput input,.stNumberInput input,.stDateIn
 .type-rec{background:#e8fbef;color:#078a2d}.type-desp{background:#fff0f1;color:#d51020}
 .user-row{display:flex;align-items:center;gap:12px;background:white;border:1px solid #e8edf5;border-radius:20px;padding:14px;margin-bottom:10px;}
 .user-ball{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:950;background:linear-gradient(145deg,#22c55e,#16a34a);}
-@media(max-width:420px){.quick-card{height:145px}.quick-title{font-size:22px}.kpi-scroll{grid-template-columns:repeat(4, minmax(145px,1fr));}.hero{padding-bottom:80px}}
+@media(max-width:760px){
+  .hero{padding:24px 22px 58px!important;}
+  .content{margin-top:-44px!important;max-width:520px!important;}
+  .bottom-nav{max-width:520px!important;width:calc(100% - 18px)!important;}
+}
+@media(max-width:420px){.quick-card{height:145px}.quick-title{font-size:22px}.kpi-scroll{grid-template-columns:repeat(4, minmax(145px,1fr));}.hero{padding-bottom:80px!important}}
 </style>
 """, unsafe_allow_html=True)
 
