@@ -78,7 +78,46 @@ html, body, [data-testid="stAppViewContainer"] {background:#eef3fb;}
 .nav-icon{font-size:24px;line-height:1.1;margin-bottom:3px;}
 .nav-active{background:linear-gradient(145deg,#7c3aed,#4f46e5);border-radius:24px;color:#fff;padding:8px 2px;margin-top:-2px;box-shadow:0 14px 24px rgba(91,66,255,.4);}
 .nav-plus{width:56px;height:56px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#7c3aed,#5b42ff);color:white;font-size:36px;margin-top:-26px;box-shadow:0 16px 28px rgba(91,66,255,.45);}
-.nav-button-wrap button{height:0!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;background:transparent!important;color:transparent!important;box-shadow:none!important;}
+
+/* BOTÕES FUNCIONAIS - sem camada invisível por cima */
+.quick-actions .stButton>button{
+    min-height:154px!important;
+    border-radius:30px!important;
+    color:#ffffff!important;
+    font-size:20px!important;
+    line-height:1.25!important;
+    white-space:pre-line!important;
+    font-weight:950!important;
+    border:1px solid rgba(255,255,255,.35)!important;
+    box-shadow:0 20px 40px rgba(15,23,42,.18), inset 0 3px 12px rgba(255,255,255,.25)!important;
+}
+.quick-actions .stButton>button[kind="secondary"]:hover{transform:translateY(-1px);filter:brightness(1.02);} 
+.quick-actions div[data-testid="column"]:nth-child(1) .stButton>button{background:linear-gradient(145deg,#22d367,#008c35)!important;}
+.quick-actions div[data-testid="column"]:nth-child(2) .stButton>button{background:linear-gradient(145deg,#ff4158,#d80a22)!important;}
+.quick-actions-2 div[data-testid="column"]:nth-child(1) .stButton>button{background:linear-gradient(145deg,#3b82f6,#0f55cf)!important;}
+.quick-actions-2 div[data-testid="column"]:nth-child(2) .stButton>button{background:linear-gradient(145deg,#8b5cf6,#4c1d95)!important;}
+.bottom-nav .stButton>button{
+    min-height:58px!important;
+    border-radius:22px!important;
+    background:transparent!important;
+    color:#cbd5e1!important;
+    border:0!important;
+    box-shadow:none!important;
+    white-space:pre-line!important;
+    font-size:13px!important;
+    line-height:1.15!important;
+    font-weight:900!important;
+}
+.bottom-nav .stButton>button:hover{background:rgba(124,58,237,.22)!important;color:#fff!important;}
+.bottom-nav .nav-new .stButton>button{
+    min-height:64px!important;
+    border-radius:26px!important;
+    background:linear-gradient(145deg,#7c3aed,#5b42ff)!important;
+    color:#fff!important;
+    font-size:15px!important;
+    box-shadow:0 14px 24px rgba(91,66,255,.42)!important;
+}
+
 
 .login-wrap{min-height:92vh;padding:30px 22px;border-radius:0 0 34px 34px;background:radial-gradient(circle at 30% 0%,#5742ff 0%,#1B124D 42%,#060B1B 100%);color:white;}
 .logo{width:92px;height:92px;border-radius:28px;background:linear-gradient(145deg,#6D5CFF,#1DD3FF);display:flex;align-items:center;justify-content:center;font-size:48px;margin:32px auto 16px;box-shadow:0 22px 48px rgba(99,91,255,.42);}
@@ -204,32 +243,30 @@ def kpis(df):
     st.markdown(html, unsafe_allow_html=True)
 
 def quick_buttons():
-    st.markdown("""
-    <div class="quick-grid">
-      <div class="quick-card q-green"><div class="quick-icon">⬆</div><div class="quick-title">RECEITAS</div><div class="quick-sub">Cadastrar entrada</div><div class="quick-arrow">›</div></div>
-      <div class="quick-card q-red"><div class="quick-icon">⬇</div><div class="quick-title">DESPESAS</div><div class="quick-sub">Cadastrar saída</div><div class="quick-arrow">›</div></div>
-      <div class="quick-card q-blue"><div class="quick-icon">📊</div><div class="quick-title">RELATÓRIOS</div><div class="quick-sub">Análise e gráficos</div><div class="quick-arrow">›</div></div>
-      <div class="quick-card q-purple"><div class="quick-icon">⚙</div><div class="quick-title">ADMIN</div><div class="quick-sub">Configurações</div><div class="quick-arrow">›</div></div>
-    </div>
-    """, unsafe_allow_html=True)
-    c1,c2=st.columns(2)
+    # Botões reais do Streamlit: a área visual é a mesma área clicável.
+    st.markdown('<div class="quick-actions">', unsafe_allow_html=True)
+    c1, c2 = st.columns(2, gap="medium")
     with c1:
-        st.markdown('<div class="hidden-btn">', unsafe_allow_html=True)
-        if st.button("Abrir Receita", key="q_receita"): st.session_state["page"]="Novo"; st.session_state["tipo_rapido"]="Receita"; st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        if st.button("⬆\nRECEITAS\nCadastrar entrada", key="q_receita", use_container_width=True):
+            st.session_state["page"] = "Novo"
+            st.session_state["tipo_rapido"] = "Receita"
+            st.rerun()
     with c2:
-        st.markdown('<div class="hidden-btn">', unsafe_allow_html=True)
-        if st.button("Abrir Despesa", key="q_despesa"): st.session_state["page"]="Novo"; st.session_state["tipo_rapido"]="Despesa"; st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-    c3,c4=st.columns(2)
+        if st.button("⬇\nDESPESAS\nCadastrar saída", key="q_despesa", use_container_width=True):
+            st.session_state["page"] = "Novo"
+            st.session_state["tipo_rapido"] = "Despesa"
+            st.rerun()
+    st.markdown('</div><div style="height:14px"></div><div class="quick-actions quick-actions-2">', unsafe_allow_html=True)
+    c3, c4 = st.columns(2, gap="medium")
     with c3:
-        st.markdown('<div class="hidden-btn">', unsafe_allow_html=True)
-        if st.button("Abrir Relatórios", key="q_rel"): st.session_state["page"]="Relatórios"; st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        if st.button("📊\nRELATÓRIOS\nAnálise e gráficos", key="q_rel", use_container_width=True):
+            st.session_state["page"] = "Relatórios"
+            st.rerun()
     with c4:
-        st.markdown('<div class="hidden-btn">', unsafe_allow_html=True)
-        if st.button("Abrir Admin", key="q_admin"): st.session_state["page"]="Mais"; st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        if st.button("⚙\nADMIN\nConfigurações", key="q_admin", use_container_width=True):
+            st.session_state["page"] = "Mais"
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def tx_icon(tipo,categoria):
     if tipo=="Receita": return "⬆","#dcfce7"
@@ -284,20 +321,26 @@ def admin(auth):
             except sqlite3.IntegrityError: st.error("Usuário já existe.")
 
 def nav(page):
-    items=[("Resumo","⌂","Resumo"),("Lançamentos","▤","Lançamentos"),("Novo","+","Novo"),("Relatórios","▥","Relatórios"),("Mais","☰","Mais")]
-    st.markdown('<div class="bottom-nav"><div class="nav-cols">', unsafe_allow_html=True)
-    cols=st.columns(5)
-    for col,(p,ico,label) in zip(cols,items):
+    # Navegação inferior funcional: sem botão invisível e sem HTML sobreposto.
+    items = [
+        ("Resumo", "🏠\nResumo"),
+        ("Lançamentos", "📋\nLanç."),
+        ("Novo", "+\nNovo"),
+        ("Relatórios", "📊\nRelat."),
+        ("Mais", "☰\nMais"),
+    ]
+    st.markdown('<div class="bottom-nav">', unsafe_allow_html=True)
+    cols = st.columns(5, gap="small")
+    for col, (p, label) in zip(cols, items):
         with col:
-            st.markdown('<div class="nav-button-wrap">', unsafe_allow_html=True)
-            if st.button(p, key=f"nav_{p}"): st.session_state["page"]=p; st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-            if p=="Novo":
-                st.markdown(f'<div class="nav-cell"><div class="nav-plus">+</div><br>{label}</div>', unsafe_allow_html=True)
-            else:
-                cls="nav-cell nav-active" if p==page else "nav-cell"
-                st.markdown(f'<div class="{cls}"><div class="nav-icon">{ico}</div>{label}</div>', unsafe_allow_html=True)
-    st.markdown('</div></div>', unsafe_allow_html=True)
+            if p == "Novo":
+                st.markdown('<div class="nav-new">', unsafe_allow_html=True)
+            if st.button(label, key=f"nav_{p}", use_container_width=True):
+                st.session_state["page"] = p
+                st.rerun()
+            if p == "Novo":
+                st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def app():
     auth=st.session_state["auth"]; page=st.session_state.get("page","Resumo")
